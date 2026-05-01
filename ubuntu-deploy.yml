@@ -1,27 +1,28 @@
 ---
-- name: Otomatik Port Atamalı Ubuntu Konteyner
+- name: Kasm Desktop Ubuntu Dağıtımı
   hosts: all
   become: yes
 
   tasks:
-    - name: Calisan konteynerlerin portlarini kontrol et
+    - name: Mevcut en yuksek portu bul
       shell: "docker ps --format '{% raw %}{{.Ports}}{% endraw %}' | grep -oP '0.0.0.0:\\K\\d+' | sort -n | tail -1"
       register: son_port
       failed_when: false
 
-    - name: Yeni portu belirle
+    - name: Yeni portu hesapla
       set_fact:
-        yeni_port: "{{ (son_port.stdout | default('2220') | int) + 1 }}"
+        yeni_port: "{{ (son_port.stdout | default('20000') | int) + 1 }}"
 
-    - name: Konteyneri yeni port ile baslat
+    - name: Kasm Ubuntu Desktop Baslat
       community.docker.docker_container:
-        name: "{{ kullanici_adi }}_ubuntu"
-        image: rastasheep/ubuntu-sshd:latest
+        name: "{{ kullanici_adi }}_kasm"
+        image: kasmweb/ubuntu-jammy-desktop:1.15.0  # Bahsettiğin Kasm imajı
         state: started
         restart_policy: always
+        shm_size: "512m" # Masaüstü performansı için kritik
         published_ports:
-          - "{{ yeni_port }}:22"
+          - "{{ yeni_port }}:6901" # Kasm'ın masaüstü portu 6901'dir
 
     - name: Bilgi ver
       debug:
-        msg: "Konteyner {{ yeni_port }} portunda acildi!"
+        msg: "Kasm Ubuntu Hazır! Adres: https://152.70.29.70:{{ yeni_port }} | Kullanıcı: kasm_user | Şifre: password"
