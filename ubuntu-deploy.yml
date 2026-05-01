@@ -4,7 +4,7 @@
   become: yes
 
   tasks:
-    - name: Port belirle
+    - name: Mevcut en yuksek portu bul
       shell: "docker ps --format '{% raw %}{{.Ports}}{% endraw %}' | grep -oP '0.0.0.0:\\K\\d+' | sort -n | tail -1"
       register: son_port
       failed_when: false
@@ -13,22 +13,24 @@
       set_fact:
         yeni_port: "{{ (son_port.stdout | default('20000') | int) + 1 }}"
 
-    # DURUM 1: LIGHT PAKET (Sadece SSH)
+    # SEÇENEK 1: LIGHT (Sadece SSH)
     - name: Light Paket Kuruluyor
       community.docker.docker_container:
         name: "{{ kullanici_adi }}_light"
         image: rastasheep/ubuntu-sshd:latest
         state: started
+        restart_policy: always
         published_ports:
           - "{{ yeni_port }}:22"
       when: paket_tipi == "light"
 
-    # DURUM 2: FULL PAKET (Kasm Desktop)
+    # SEÇENEK 2: FULL (Kasm Desktop)
     - name: Full Paket Kuruluyor
       community.docker.docker_container:
         name: "{{ kullanici_adi }}_full"
         image: kasmweb/ubuntu-jammy-desktop:1.15.0
         state: started
+        restart_policy: always
         shm_size: "512m"
         env:
           VNC_PW: "password123"
@@ -36,11 +38,13 @@
           - "{{ yeni_port }}:6901"
       when: paket_tipi == "full"
 
-    - name: Kullaniciya Bilgileri Goster
+    - name: Bilgi Ver
       debug:
         msg: 
-          - "Siparisiniz Hazir!"
-          - "Paket: {{ paket_tipi }}"
-          - "IP: 152.70.29.70"
-          - "Port: {{ yeni_port }}"
-          - "Erisim: {{ 'https://' if paket_tipi == 'full' else 'ssh root@' }}152.70.29.70:{{ yeni_port }}"
+          - "------------------------------------------"
+          - "SİPARİŞİNİZ HAZIR!"
+          - "Makine Adı: {{ kullanici_adi }}"
+          - "Paket Tipi: {{ paket_tipi }}"
+          - "Erişim Adresi: {{ 'https://152.70.29.70:' + yeni_port if paket_tipi == 'full' else 'ssh root@152.70.29.70 -p ' + yeni_port }}"
+          - "Şifre: password123"
+          - "------------------------------------------"
