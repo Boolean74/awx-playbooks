@@ -1,0 +1,20 @@
+---
+- name: Kullanıcıya Özel Ubuntu ve SSH Portu Oluştur
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Docker yüklü mü kontrol et
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Kullanıcı için Ubuntu Konteynerini Başlat
+      community.docker.docker_container:
+        name: "{{ kullanici_adi | default('test_user') }}_ubuntu"
+        image: rastasheep/ubuntu-sshd:latest
+        state: started
+        restart_policy: always
+        published_ports:
+          - "{{ dis_port | default('2221') }}:22"
