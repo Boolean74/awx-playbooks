@@ -1,20 +1,27 @@
 ---
-- name: Kullanıcıya Özel Ubuntu ve SSH Portu Oluştur
+- name: Otomatik Port Atamalı Ubuntu Konteyner
   hosts: all
   become: yes
 
   tasks:
-    - name: Docker yüklü mü kontrol et
-      apt:
-        name: docker.io
-        state: present
-        update_cache: yes
+    - name: Çalışan konteynerlerin portlarını kontrol et
+      shell: "docker ps --format '{{ '{{' }}.Ports{{ '}}' }}' | grep -oP '0.0.0.0:\K\d+' | sort -n | tail -1"
+      register: son_port
+      failed_when: false
 
-    - name: Kullanıcı için Ubuntu Konteynerini Başlat
+    - name: Yeni portu belirle (Eğer hiç konteyner yoksa 2221'den başla)
+      set_fact:
+        yeni_port: "{{ (son_port.stdout | default('2220') | int) + 1 }}"
+
+    - name: Konteyneri yeni port ile başlat
       community.docker.docker_container:
-        name: "{{ kullanici_adi | default('test_user') }}_ubuntu"
+        name: "{{ kullanici_adi }}_ubuntu"
         image: rastasheep/ubuntu-sshd:latest
         state: started
         restart_policy: always
         published_ports:
-          - "{{ dis_port | default('2221') }}:22"
+          - "{{ yeni_port }}:22"
+
+    - name: Kullanıcıya bilgi ver
+      debug:
+        msg: "Kullanıcı: {{ kullanici_adi }} için konteyner {{ yeni_port }} portunda açıldı!"
