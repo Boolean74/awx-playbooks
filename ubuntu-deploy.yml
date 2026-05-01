@@ -16,13 +16,16 @@
     - name: Kasm Ubuntu Desktop Baslat
       community.docker.docker_container:
         name: "{{ kullanici_adi }}_kasm"
-        image: kasmweb/ubuntu-jammy-desktop:1.15.0  # Bahsettiğin Kasm imajı
+        image: kasmweb/ubuntu-jammy-desktop:1.15.0
         state: started
         restart_policy: always
-        shm_size: "512m" # Masaüstü performansı için kritik
+        shm_size: "512m"
+        # BURASI KRİTİK: Şifreyi ve kullanıcıyı burada netleştiriyoruz
+        env:
+          VNC_PW: "password123" 
         published_ports:
-          - "{{ yeni_port }}:6901" # Kasm'ın masaüstü portu 6901'dir
+          - "{{ yeni_port }}:6901"
 
     - name: Bilgi ver
       debug:
-        msg: "Kasm Ubuntu Hazır! Adres: https://152.70.29.70:{{ yeni_port }} | Kullanıcı: kasm_user | Şifre: password"
+        msg: "Kasm Hazir! Kullanici: kasm_user | Sifre: password123 | Port: {{ yeni_port }}"
