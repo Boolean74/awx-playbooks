@@ -4,16 +4,16 @@
   become: yes
 
   tasks:
-    - name: Çalışan konteynerlerin portlarını kontrol et
-      shell: "docker ps --format '{{ '{{' }}.Ports{{ '}}' }}' | grep -oP '0.0.0.0:\K\d+' | sort -n | tail -1"
+    - name: Calisan konteynerlerin portlarini kontrol et
+      shell: "docker ps --format '{% raw %}{{.Ports}}{% endraw %}' | grep -oP '0.0.0.0:\\K\\d+' | sort -n | tail -1"
       register: son_port
       failed_when: false
 
-    - name: Yeni portu belirle (Eğer hiç konteyner yoksa 2221'den başla)
+    - name: Yeni portu belirle
       set_fact:
         yeni_port: "{{ (son_port.stdout | default('2220') | int) + 1 }}"
 
-    - name: Konteyneri yeni port ile başlat
+    - name: Konteyneri yeni port ile baslat
       community.docker.docker_container:
         name: "{{ kullanici_adi }}_ubuntu"
         image: rastasheep/ubuntu-sshd:latest
@@ -22,6 +22,6 @@
         published_ports:
           - "{{ yeni_port }}:22"
 
-    - name: Kullanıcıya bilgi ver
+    - name: Bilgi ver
       debug:
-        msg: "Kullanıcı: {{ kullanici_adi }} için konteyner {{ yeni_port }} portunda açıldı!"
+        msg: "Konteyner {{ yeni_port }} portunda acildi!"
