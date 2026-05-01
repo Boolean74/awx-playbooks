@@ -1,10 +1,10 @@
 ---
-- name: Kasm Desktop Ubuntu Dağıtımı
+- name: Vast.ai Tarzi Otomatik Dagitim
   hosts: all
   become: yes
 
   tasks:
-    - name: Mevcut en yuksek portu bul
+    - name: Port belirle
       shell: "docker ps --format '{% raw %}{{.Ports}}{% endraw %}' | grep -oP '0.0.0.0:\\K\\d+' | sort -n | tail -1"
       register: son_port
       failed_when: false
@@ -13,19 +13,34 @@
       set_fact:
         yeni_port: "{{ (son_port.stdout | default('20000') | int) + 1 }}"
 
-    - name: Kasm Ubuntu Desktop Baslat
+    # DURUM 1: LIGHT PAKET (Sadece SSH)
+    - name: Light Paket Kuruluyor
       community.docker.docker_container:
-        name: "{{ kullanici_adi }}_kasm"
+        name: "{{ kullanici_adi }}_light"
+        image: rastasheep/ubuntu-sshd:latest
+        state: started
+        published_ports:
+          - "{{ yeni_port }}:22"
+      when: paket_tipi == "light"
+
+    # DURUM 2: FULL PAKET (Kasm Desktop)
+    - name: Full Paket Kuruluyor
+      community.docker.docker_container:
+        name: "{{ kullanici_adi }}_full"
         image: kasmweb/ubuntu-jammy-desktop:1.15.0
         state: started
-        restart_policy: always
         shm_size: "512m"
-        # BURASI KRİTİK: Şifreyi ve kullanıcıyı burada netleştiriyoruz
         env:
-          VNC_PW: "password123" 
+          VNC_PW: "password123"
         published_ports:
           - "{{ yeni_port }}:6901"
+      when: paket_tipi == "full"
 
-    - name: Bilgi ver
+    - name: Kullaniciya Bilgileri Goster
       debug:
-        msg: "Kasm Hazir! Kullanici: kasm_user | Sifre: password123 | Port: {{ yeni_port }}"
+        msg: 
+          - "Siparisiniz Hazir!"
+          - "Paket: {{ paket_tipi }}"
+          - "IP: 152.70.29.70"
+          - "Port: {{ yeni_port }}"
+          - "Erisim: {{ 'https://' if paket_tipi == 'full' else 'ssh root@' }}152.70.29.70:{{ yeni_port }}"
